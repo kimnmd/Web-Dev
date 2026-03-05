@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSU HR Hub - Synesthesia Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --accent: #FF6B9D;
+            --text-dark: #1d1d1f;
+            --text-light: #86868b;
+            --bg-light: #fbfbfd;
+            --bg-white: #ffffff;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: var(--text-dark);
+            background: var(--bg-white);
+            overflow-x: hidden;
+        }
+
+        /* Synesthesia Canvas Layer */
+        #synesthesia-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        /* Audio Visualizer Bar */
+        .audio-visualizer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 20px;
+            border-top: 2px solid rgba(102, 126, 234, 0.3);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .audio-visualizer.active {
+            transform: translateY(0);
+        }
+
+        .visualizer-bar {
+            width: 8px;
+            height: 20px;
+            background: linear-gradient(to top, var(--accent), var(--primary));
+            border-radius: 4px;
+            transition: height 0.1s ease;
+        }
+
+        .audio-controls {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .audio-control-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.85) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-control-btn::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            left: -30%;
+            width: 40%;
+            height: 40%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .audio-control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .audio-control-btn.active {
+            background: linear-gradient(135deg, rgba(255, 107, 157, 0.9) 0%, rgba(255, 64, 129, 0.85) 100%);
+            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Synesthesia Info Panel */
+        .synesthesia-info {
+            position: fixed;
+            top: 58px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            padding: 12px 16px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 9998;
+            max-width: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: translateY(-250px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .synesthesia-info.active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .info-toggle {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.85) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .info-text {
+            font-size: 11px;
+            line-height: 1.5;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .info-shortcut {
+            background: rgba(102, 126, 234, 0.25);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            margin-bottom: 6px;
+            font-family: 'Courier New', monospace;
+            color: white;
+        }
+
+        .shortcut-key {
+            background: var(--primary);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 9px;
+        }
+
+        /* Custom Cursor */
+        .custom-cursor {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--primary);
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            transition: all 0.15s ease;
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            left: -100px;
+            top: -100px;
+        }
+
+        .custom-cursor.visible { opacity: 1; }
+        .custom-cursor.hover {
+            transform: scale(1.5);
+            background: rgba(255, 107, 157, 0.3);
+            border-color: var(--accent);
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 max(22px, env(safe-area-inset-left));
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+
+        nav.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-logo {
+            font-size: 21px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-dark);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-links a:hover { opacity: 0.6; }
+
+        .timezone-widget { position: relative; }
+
+        .timezone-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timezone-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .timezone-dropdown {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 220px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 10000;
+        }
+
+        .timezone-dropdown.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .timezone-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .timezone-item:last-child { border-bottom: none; }
+        .timezone-city { font-size: 13px; color: var(--text-light); font-weight: 500; }
+        .timezone-time {
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ─── SCROLL EXPAND HERO ─── */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .hero-bg-layer {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 0;
+        }
+
+        .hero-expand-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 400px;
+            max-width: 95vw;
+            max-height: 85vh;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .hero-expand-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+        }
+
+        .hero-expand-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Full-width bottom fade — completely hides the Kling AI watermark */
+        .hero-expand-watermark-cover {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to top, #000 0%, #000 30%, transparent 100%);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Title words — centered on top of the video */
+        .hero-title-layer {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            pointer-events: none;
+            gap: 4px;
+        }
+
+        .hero-title-word {
+            display: block;
+            font-size: clamp(32px, 5.5vw, 76px);
+            font-weight: 700;
+            color: rgba(255,255,255,0.95);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            will-change: transform;
+        }
+
+        /* Hint text below the video */
+        .hero-expand-hints {
+            position: absolute;
+            left: 50%;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            will-change: transform;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Features Grid */
+        .features {
+            padding: 100px 20px;
+            background: var(--bg-light);
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 80px;
+        }
+
+        .section-tag {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-size: clamp(36px, 5vw, 56px);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.015em;
+            margin-bottom: 16px;
+        }
+
+        .section-description {
+            font-size: 19px;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
+        }
+
+        .feature-card > * { position: relative; z-index: 1; }
+
+        .feature-card:hover {
+            transform: translateY(-12px) rotateX(5deg);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.12), 0 0 50px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-card:hover::before { opacity: 0.03; }
+        .feature-card:hover .feature-icon { transform: scale(1.1) rotate(5deg); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+        .feature-card:hover .feature-title {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 24px;
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+            animation: icon-float 3s ease-in-out infinite;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        @keyframes icon-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .feature-card:nth-child(1) .feature-icon { animation-delay: 0s; }
+        .feature-card:nth-child(2) .feature-icon { animation-delay: 0.5s; }
+        .feature-card:nth-child(3) .feature-icon { animation-delay: 1s; }
+        .feature-card:nth-child(4) .feature-icon { animation-delay: 1.5s; }
+        .feature-card:nth-child(5) .feature-icon { animation-delay: 2s; }
+        .feature-card:nth-child(6) .feature-icon { animation-delay: 2.5s; }
+
+        .feature-title { font-size: 24px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.01em; }
+        .feature-description { font-size: 16px; color: var(--text-light); line-height: 1.6; }
+
+        /* Product Showcase */
+        .showcase {
+            padding: 100px 20px;
+            background: var(--bg-white);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .showcase::before {
+            content: '';
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1), transparent 70%);
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+        }
+
+        .team-carousel-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 60px auto;
+            height: 600px;
+            overflow: hidden;
+        }
+
+        .team-member {
+            position: absolute;
+            width: 100%; height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            padding: 60px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+        }
+
+        .team-member.active { opacity: 1; transform: translateX(0); pointer-events: all; }
+        .team-member.prev { transform: translateX(-100px); }
+
+        .member-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .member-avatar {
+            width: 280px; height: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: float 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+
+        .member-content { color: white; }
+        .member-name { font-size: 48px; font-weight: 700; margin-bottom: 10px; }
+        .member-role { font-size: 24px; font-weight: 500; margin-bottom: 20px; opacity: 0.9; }
+        .member-description { font-size: 18px; line-height: 1.6; margin-bottom: 30px; opacity: 0.95; }
+        .member-details { display: flex; flex-direction: column; gap: 15px; }
+        .detail-item { font-size: 16px; padding: 12px 20px; background: rgba(255,255,255,0.15); border-radius: 12px; backdrop-filter: blur(10px); }
+        .detail-item strong { display: block; font-size: 14px; opacity: 0.8; margin-bottom: 4px; }
+
+        .carousel-controls { display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 40px; }
+        .carousel-btn {
+            width: 50px; height: 50px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .carousel-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5); }
+
+        .carousel-indicators { display: flex; gap: 10px; }
+        .indicator-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .indicator-dot.active { background: var(--primary); transform: scale(1.3); }
+
+        /* Stats */
+        .stats {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            overflow: hidden;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 60px;
+            text-align: center;
+        }
+
+        .achievements-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            padding: 40px 20px;
+        }
+
+        .achievement-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .achievement-card:hover { background: rgba(255,255,255,0.15); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .achievement-title { font-size: 20px; font-weight: 600; color: white; line-height: 1.3; }
+        .achievement-person { font-size: 14px; color: rgba(255,255,255,0.8); font-style: italic; }
+
+        /* CTA */
+        .final-cta { padding: 120px 20px; background: var(--bg-light); text-align: center; }
+        .final-cta h2 { font-size: clamp(40px, 5vw, 64px); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 24px; }
+        .final-cta p { font-size: 21px; color: var(--text-light); margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+        /* Footer */
+        footer { background: var(--text-dark); color: rgba(255,255,255,0.7); padding: 60px 20px 40px; }
+        .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; margin-bottom: 40px; }
+        .footer-section h4 { color: white; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+        .footer-section ul { list-style: none; }
+        .footer-section ul li { margin-bottom: 10px; }
+        .footer-section a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 12px; transition: color 0.3s ease; }
+        .footer-section a:hover { color: white; }
+        .footer-bottom { max-width: 1200px; margin: 0 auto; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 12px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav { padding: 0 20px; }
+            .nav-links { display: none; }
+            /* Hero — smaller initial video on mobile */
+            .hero-title-word { font-size: clamp(24px, 7vw, 48px); }
+            .hero-expand-container { width: 260px; height: 340px; }
+            /* Team */
+            .team-member { grid-template-columns: 1fr; gap: 30px; padding: 40px 30px; height: auto; }
+            .member-avatar { width: 200px; height: 200px; font-size: 80px; }
+            .member-name { font-size: 36px; }
+            .member-role { font-size: 20px; }
+            .team-carousel-container { height: auto; min-height: 600px; }
+        }
+
+        /* Scroll animations */
+        .fade-in { opacity: 0; transform: translateY(30px); transition: all 0.8s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* Dropdown */
+        .nav-links li { position: relative; }
+        .dropdown > a { cursor: pointer; user-select: none; }
+        .dropdown::before { content: ''; position: absolute; top: 100%; left: -10px; right: -10px; height: 15px; background: transparent; }
+        .dropdown-menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; background: white; min-width: 160px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; padding: 0.4rem 0; z-index: 10000; border: 1px solid #e2e8f0; }
+        .dropdown:hover .dropdown-menu, .dropdown-menu:hover { display: block; }
+        .dropdown-menu a { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; color: var(--text-dark); text-decoration: none; transition: all 0.2s; font-size: 14px; font-weight: 500; white-space: nowrap; }
+        .dropdown-menu a:hover { background: #f7fafc; color: var(--primary); }
+        .dropdown > a::after { content: " ⌄"; font-size: 12px; margin-left: 4px; transition: transform 0.2s; }
+        .dropdown:hover > a::after { transform: rotate(180deg); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 32px; padding: 60px 80px; max-width: 600px; text-align: center; transform: scale(0.9); transition: transform 0.3s ease; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .modal-close:hover { background: rgba(255,255,255,0.3); transform: rotate(90deg); }
+        .modal-icon { font-size: 80px; margin-bottom: 24px; animation: float 3s ease-in-out infinite; }
+        .modal-title { font-size: 48px; font-weight: 700; color: white; margin-bottom: 16px; letter-spacing: -0.02em; }
+        .modal-description { font-size: 20px; color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 32px; }
+        .modal-subtitle { font-size: 16px; color: rgba(255,255,255,0.8); font-style: italic; }
+    </style>
+</head>
+<body>
+    <!-- Synesthesia Canvas -->
+    <canvas id="synesthesia-canvas"></canvas>
+
+    <!-- Audio Visualizer -->
+    <div class="audio-visualizer">
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+    </div>
+
+    <!-- Synesthesia Info Panel -->
+    <div class="synesthesia-info" id="synesthesia-info">
+        <div class="info-title">Synesthesia Controls</div>
+        <div class="info-text">Move your mouse and click to create interactive visual experiences.</div>
+        <div class="info-shortcut"><span class="shortcut-key">Click</span> anywhere to create particles</div>
+        <div class="info-shortcut"><span class="shortcut-key">Move</span> mouse for color shifts</div>
+        <div class="info-shortcut"><span class="shortcut-key">Shift</span> for ambient pulse</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="custom-cursor"></div>
+
+    <!-- Coming Soon Modal -->
+    <div class="modal-overlay" id="community-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">✕</button>
+            <div class="modal-icon">🌟</div>
+            <h2 class="modal-title">Coming Soon</h2>
+            <p class="modal-description">We're building something amazing for our community! Stay tuned for exciting updates and new features.</p>
+            <p class="modal-subtitle">The NSU HR Team is working hard to bring this to you!</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="nav">
+        <div class="nav-logo">NSU HR</div>
+        <ul class="nav-links">
+            <li><a href="https://online.adp.com/signin/v1/?APPID=Pin4NAS&productId=80e309c3-709e-bae1-e053-3505430b5495&returnURL=https://signin.adp.com&callingAppId=landing&TARGET=-SM-HTTPS%3a%2f%2fsignin%2eadp%2ecom%2femployee%3ftransId%3d8ace1375-1f93-42bf-b644-446908bbb7dc" target="_blank">ADP</a></li>
+            <li><a href="http://benefits2026.nongshimusapto.info/">Benefits</a></li>
+            <li><a href="https://scribehow.com/viewer/Time_and_Attendance__dt3JdWjhQeKEi7gFQF89_A?referrer=workspace" target="_blank">SOP</a></li>
+            <li><a href="https://find-foodie-now.base44.app" target="_blank">Foodie</a></li>
+            <li><a href="#" id="community-link">Community</a></li>
+            <li class="dropdown">
+                <a>10 minute break</a>
+                <div class="dropdown-menu">
+                    <a href="https://quickdraw.withgoogle.com/" target="_blank">🎨 Quick Draw</a>
+                    <a href="https://themonolithproject.net/" target="_blank">🗿 The Monolith</a>
+                    <a href="http://species-in-pieces.com/" target="_blank">🦎 Species in Pieces</a>
+                </div>
+            </li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div class="nav-right">
+            <div class="timezone-widget">
+                <button class="timezone-button">
+                    🌍 <span id="local-time">--:--:--</span>
+                </button>
+                <div class="timezone-dropdown">
+                    <div class="timezone-item"><span class="timezone-city">California</span><span class="timezone-time" id="time-california">--:--:--</span></div>
+                    <div class="timezone-item"><span class="timezone-city">Korea</span><span class="timezone-time" id="time-korea">--:--:--</span></div>
+                    <div class="timezone-item"><span class="timezone-city">Texas</span><span class="timezone-time" id="time-texas">--:--:--</span></div>
+                    <div class="timezone-item"><span class="timezone-city">New Jersey</span><span class="timezone-time" id="time-newjersey">--:--:--</span></div>
+                    <div class="timezone-item"><span class="timezone-city">Chicago</span><span class="timezone-time" id="time-chicago">--:--:--</span></div>
+                </div>
+            </div>
+            <button class="info-toggle" id="info-toggle">ℹ️</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-bg-layer" id="hero-bg-layer"></div>
+        <div class="hero-expand-container" id="hero-expand-container">
+            <video class="hero-expand-video" autoplay muted loop playsinline>
+                <source src="Kling AI Video 2026 Pristine 3942.mp4" type="video/mp4" />
+            </video>
+            <div class="hero-expand-overlay" id="hero-expand-overlay"></div>
+            <div class="hero-expand-watermark-cover"></div>
+        </div>
+        <div class="hero-title-layer">
+            <span class="hero-title-word" id="hero-word-1">Reimagining</span>
+            <span class="hero-title-word" id="hero-word-2">Human Resources</span>
+        </div>
+        <div class="hero-expand-hints" id="hero-expand-hints">
+            <span class="hint-text" id="hint-left">HR Platform</span>
+            <span class="hint-text" id="hint-right">↕ Scroll to Expand</span>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header fade-in">
+            <div class="section-tag">What We Offer</div>
+            <h2 class="section-title">Empowering Your Success</h2>
+            <p class="section-description">We're here to support your growth, celebrate your achievements, and help you thrive every single day.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="feature-icon">📚</div>
+                <h3 class="feature-title">Career Opportunities</h3>
+                <p class="feature-description">ADP learning will be available anytime. Certifications will be reimbursed if the manager and upper management approve.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🤝</div>
+                <h3 class="feature-title">ERG</h3>
+                <p class="feature-description">To help people come together with the same background, clubs are available for connection and community building.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🏥</div>
+                <h3 class="feature-title">Health Insurance</h3>
+                <p class="feature-description">Comprehensive health coverage options to keep you and your family protected with medical, dental, and vision benefits.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">📈</div>
+                <h3 class="feature-title">Training / Employment Development</h3>
+                <p class="feature-description">Continuous learning opportunities and professional development programs to help you grow and advance your career.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">KPI</h3>
+                <p class="feature-description">Clear performance indicators and regular feedback to help you track your progress and achieve your goals.</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">💪</div>
+                <h3 class="feature-title">Open Door Policy</h3>
+                <p class="feature-description">Direct access to management and HR for any questions, concerns, or ideas you want to share in a supportive environment.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="showcase" id="product">
+        <div class="section-header fade-in">
+            <div class="section-tag">Our People</div>
+            <h2 class="section-title">Meet the HR Team</h2>
+            <p class="section-description">Dedicated professionals committed to supporting every employee's journey.</p>
+        </div>
+
+        <div id="team-carousel" class="team-carousel-container">
+            <div class="team-member" id="member-0">
+                <div class="member-visual"><div class="member-avatar">🐶</div></div>
+                <div class="member-content">
+                    <h3 class="member-name">Jae Ik Yoo</h3>
+                    <p class="member-role">HR Manager</p>
+                    <p class="member-description">Oversees all HR operations and strategy. Jae brings leadership and vision to create a workplace where everyone thrives.</p>
+                    <div class="member-details">
+                        <div class="detail-item"><strong>Greatest Achievement:</strong> Building a cohesive HR team</div>
+                        <div class="detail-item"><strong>Passion:</strong> Employee development</div>
+                    </div>
+                </div>
+            </div>
+            <div class="team-member" id="member-1">
+                <div class="member-visual"><div class="member-avatar">🐑</div></div>
+                <div class="member-content">
+                    <h3 class="member-name">Amy Jung</h3>
+                    <p class="member-role">Assistant Manager</p>
+                    <p class="member-description">In charge of compliance, ensuring we meet all regulations while maintaining a supportive work environment.</p>
+                    <div class="member-details">
+                        <div class="detail-item"><strong>Specialty:</strong> Compliance & Policy</div>
+                        <div class="detail-item"><strong>Approach:</strong> Detail-oriented excellence</div>
+                    </div>
+                </div>
+            </div>
+            <div class="team-member" id="member-2">
+                <div class="member-visual"><div class="member-avatar">🐰</div></div>
+                <div class="member-content">
+                    <h3 class="member-name">Elly Min</h3>
+                    <p class="member-role">HR Associate</p>
+                    <p class="member-description">Leads recruiting efforts to bring exceptional talent to our organization. Elly finds people who will grow with us.</p>
+                    <div class="member-details">
+                        <div class="detail-item"><strong>Focus:</strong> Talent Acquisition</div>
+                        <div class="detail-item"><strong>Strength:</strong> Finding the right fit</div>
+                    </div>
+                </div>
+            </div>
+            <div class="team-member" id="member-3">
+                <div class="member-visual"><div class="member-avatar">🐻</div></div>
+                <div class="member-content">
+                    <h3 class="member-name">Dojun Alex Kim</h3>
+                    <p class="member-role">HR Associate</p>
+                    <p class="member-description">Manages payroll, retirement plans, and PTO. Dojun ensures every team member is compensated fairly and on time.</p>
+                    <div class="member-details">
+                        <div class="detail-item"><strong>Focus:</strong> Payroll, Retirement & PTO</div>
+                        <div class="detail-item"><strong>Commitment:</strong> Accuracy and timeliness</div>
+                    </div>
+                </div>
+            </div>
+            <div class="team-member" id="member-4">
+                <div class="member-visual"><div class="member-avatar">🦥</div></div>
+                <div class="member-content">
+                    <h3 class="member-name">Moses Yang</h3>
+                    <p class="member-role">HR Associate</p>
+                    <p class="member-description">In charge of benefits administration and training, helping employees get the most out of their health, wellness, and insurance programs while supporting professional development.</p>
+                    <div class="member-details">
+                        <div class="detail-item"><strong>Specialty:</strong> Benefits Administration & Training</div>
+                        <div class="detail-item"><strong>Mission:</strong> Maximizing employee wellness</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="carousel-controls">
+            <button class="carousel-btn" id="prev-member">←</button>
+            <div class="carousel-indicators" id="indicators"></div>
+            <button class="carousel-btn" id="next-member">→</button>
+        </div>
+    </section>
+
+    <!-- Team Highlights Section -->
+    <section class="stats" id="about">
+        <div class="section-header fade-in" style="margin-bottom: 30px;">
+            <h2 style="color: white; font-size: clamp(36px, 5vw, 48px); margin-bottom: 16px;">Team Highlights</h2>
+            <p style="color: rgba(255,255,255,0.9); font-size: 18px;">Celebrating our HR team's remarkable achievements</p>
+        </div>
+        <div class="achievements-grid">
+            <div class="achievement-card fade-in"><div class="achievement-title">42+ New Hires</div><div class="achievement-person">Elly Min</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">98% Payroll Accuracy</div><div class="achievement-person">Dojun Alex Kim</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">6+ Company-Wide Training Programs</div><div class="achievement-person">Moses Yang</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">Vacation & Sick Time Increase</div><div class="achievement-person">Moses Yang & Dojun Alex Kim</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">Company 2026 Handbook Creation</div><div class="achievement-person">Amy Jung</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">30-60-90 Day Plan Creation</div><div class="achievement-person">Elly Min</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">ERG Creation</div><div class="achievement-person">Moses Yang, Amy Jung & Dojun Alex Kim</div></div>
+            <div class="achievement-card fade-in"><div class="achievement-title">HR Hub Creation</div><div class="achievement-person">Dojun Alex Kim</div></div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta" id="contact">
+        <h2 class="fade-in">New here? We've got you covered.</h2>
+        <p class="fade-in">HR is here to support you. This page brings together all HR related SOPs, tools, and resources to help you understand processes, complete tasks smoothly, and know where to go when questions come up. Whether you are just getting started or need a quick reference, everything you need is easy to find right at the top of this page.</p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="https://online.adp.com/signin/v1/?APPID=Pin4NAS&productId=80e309c3-709e-bae1-e053-3505430b5495&returnURL=https://signin.adp.com&callingAppId=landing&TARGET=-SM-HTTPS%3a%2f%2fsignin%2eadp%2ecom%2femployee%3ftransId%3d8ace1375-1f93-42bf-b644-446908bbb7dc" target="_blank">ADP</a></li>
+                    <li><a href="http://benefits2026.nongshimusapto.info/">Benefits</a></li>
+                    <li><a href="https://find-foodie-now.base44.app" target="_blank">Foodie</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="https://scribehow.com/viewer/Time_and_Attendance__dt3JdWjhQeKEi7gFQF89_A?referrer=workspace" target="_blank">SOP</a></li>
+                    <li><a href="https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=6aa48373-3ed3-4d60-ad3e-50273d106d20&selectedMenuKey=CurrentOpenings" target="_blank">Careers</a></li>
+                    <li><a href="https://nongshimusa.com/" target="_blank">Company Page</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Handbook</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">&copy; 2026 NSU HR Hub. All rights reserved. Built by HR team with ❤️</div>
+    </footer>
+
+    <script>
+        // ===== SYNESTHESIA ENGINE =====
+        class SynesthesiaEngine {
+            constructor() {
+                this.canvas = document.getElementById('synesthesia-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.synthEnabled = true;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.resize();
+                this.setupEventListeners();
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => this.resize());
+                document.addEventListener('mousemove', (e) => {
+                    this.mouseX = e.clientX;
+                    this.mouseY = e.clientY;
+                    if (this.synthEnabled) this.updateBackgroundColor(e.clientX, e.clientY);
+                });
+                document.addEventListener('click', (e) => {
+                    if (this.synthEnabled) this.createParticleBurst(e.clientX, e.clientY);
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (this.synthEnabled && e.key === 'Shift') {
+                        e.preventDefault();
+                        this.createAmbientPulse();
+                    }
+                });
+            }
+
+            updateBackgroundColor(x, y) {
+                const hue = (x / window.innerWidth) * 360;
+                const saturation = (y / window.innerHeight) * 50 + 30;
+                document.querySelectorAll('.gradient-orb').forEach((orb, i) => {
+                    const offset = i * 60;
+                    orb.style.background = `linear-gradient(135deg, hsl(${hue + offset}, ${saturation}%, 60%), hsl(${hue + offset + 30}, ${saturation}%, 50%))`;
+                });
+            }
+
+            createParticleBurst(x, y) {
+                const hue = (x / window.innerWidth) * 360;
+                for (let i = 0; i < 8; i++) {
+                    this.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        life: 1,
+                        decay: 0.015 + Math.random() * 0.01,
+                        size: 2 + Math.random() * 3,
+                        hue: hue + (Math.random() - 0.5) * 40
+                    });
+                }
+            }
+
+            createAmbientPulse() {
+                for (let i = 0; i < 30; i++) {
+                    const angle = (i / 30) * Math.PI * 2;
+                    this.particles.push({
+                        x: window.innerWidth / 2,
+                        y: window.innerHeight / 2,
+                        vx: Math.cos(angle) * 5,
+                        vy: Math.sin(angle) * 5,
+                        life: 1, decay: 0.005, size: 4,
+                        hue: (i / 30) * 360
+                    });
+                }
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.particles = this.particles.filter(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    p.vx *= 0.99; p.vy *= 0.99;
+                    p.life -= p.decay;
+                    if (p.life > 0) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = p.life;
+                        this.ctx.fillStyle = `hsl(${p.hue}, 80%, 60%)`;
+                        this.ctx.shadowBlur = 20;
+                        this.ctx.shadowColor = `hsl(${p.hue}, 80%, 60%)`;
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.restore();
+                        return true;
+                    }
+                    return false;
+                });
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        const synesthesiaEngine = new SynesthesiaEngine();
+
+        // Info toggle
+        document.getElementById('info-toggle').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('synesthesia-info').classList.toggle('active');
+        });
+        document.addEventListener('click', (e) => {
+            const infoPanel = document.getElementById('synesthesia-info');
+            const infoToggle = document.getElementById('info-toggle');
+            if (!infoPanel.contains(e.target) && !infoToggle.contains(e.target)) {
+                infoPanel.classList.remove('active');
+            }
+        });
+
+        // Community Modal
+        const communityLink = document.getElementById('community-link');
+        const communityModal = document.getElementById('community-modal');
+        const modalClose = document.getElementById('modal-close');
+        if (communityLink) communityLink.addEventListener('click', (e) => { e.preventDefault(); communityModal.classList.add('active'); });
+        if (modalClose) modalClose.addEventListener('click', () => communityModal.classList.remove('active'));
+        if (communityModal) communityModal.addEventListener('click', (e) => { if (e.target === communityModal) communityModal.classList.remove('active'); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && communityModal.classList.contains('active')) communityModal.classList.remove('active'); });
+
+        // Timezones
+        const timezones = { california: 'America/Los_Angeles', korea: 'Asia/Seoul', texas: 'America/Chicago', newjersey: 'America/New_York', chicago: 'America/Chicago' };
+        function updateTimezones() {
+            const el = document.getElementById('local-time');
+            if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            Object.keys(timezones).forEach(key => {
+                const elem = document.getElementById(`time-${key}`);
+                if (elem) {
+                    try { elem.textContent = new Date().toLocaleTimeString('en-US', { timeZone: timezones[key], hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+                    catch(e) { elem.textContent = '--:--:--'; }
+                }
+            });
+        }
+        updateTimezones();
+        setInterval(updateTimezones, 1000);
+
+        // Timezone dropdown toggle
+        const tzBtn = document.querySelector('.timezone-button');
+        const tzDropdown = document.querySelector('.timezone-dropdown');
+        if (tzBtn && tzDropdown) {
+            tzBtn.addEventListener('click', (e) => { e.stopPropagation(); tzDropdown.classList.toggle('active'); });
+            document.addEventListener('click', (e) => { if (!tzBtn.contains(e.target) && !tzDropdown.contains(e.target)) tzDropdown.classList.remove('active'); });
+        }
+
+        // Custom cursor
+        const cursor = document.querySelector('.custom-cursor');
+        let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX; mouseY = e.clientY;
+            if (cursor && !cursor.classList.contains('visible')) cursor.classList.add('visible');
+        });
+        (function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.2;
+            cursorY += (mouseY - cursorY) * 0.2;
+            if (cursor) { cursor.style.left = cursorX + 'px'; cursor.style.top = cursorY + 'px'; }
+            requestAnimationFrame(animateCursor);
+        })();
+
+        document.querySelectorAll('a, button, .feature-card').forEach(el => {
+            el.addEventListener('mouseenter', () => { if (cursor) cursor.classList.add('hover'); });
+            el.addEventListener('mouseleave', () => { if (cursor) cursor.classList.remove('hover'); });
+        });
+
+        // Parallax on floating icons
+        document.addEventListener('mousemove', (e) => {
+            const mx = e.clientX / window.innerWidth;
+            const my = e.clientY / window.innerHeight;
+            document.querySelectorAll('.float-icon').forEach((icon, i) => {
+                const speed = (i + 1) * 0.5;
+                icon.style.transform = `translate(${(mx - 0.5) * speed * 50}px, ${(my - 0.5) * speed * 50}px)`;
+            });
+        });
+
+        // 3D tilt on feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left, y = e.clientY - rect.top;
+                const cx = rect.width / 2, cy = rect.height / 2;
+                card.style.transform = `translateY(-12px) rotateX(${(y - cy) / 10}deg) rotateY(${(cx - x) / 10}deg)`;
+            });
+            card.addEventListener('mouseleave', () => { card.style.transform = 'translateY(0) rotateX(0) rotateY(0)'; });
+        });
+
+        // Navbar scroll
+        window.addEventListener('scroll', () => {
+            document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
+        }, { passive: true });
+
+        // Scroll-reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Team Carousel
+        let currentMember = 0;
+        const teamMembers = document.querySelectorAll('.team-member');
+        const indicatorsContainer = document.getElementById('indicators');
+        const prevBtn = document.getElementById('prev-member');
+        const nextBtn = document.getElementById('next-member');
+
+        function showMember(index) {
+            teamMembers.forEach((m, i) => {
+                m.classList.remove('active', 'prev');
+                if (i === index) m.classList.add('active');
+                else if (i < index) m.classList.add('prev');
+            });
+            document.querySelectorAll('.indicator-dot').forEach((d, i) => d.classList.toggle('active', i === index));
+            currentMember = index;
+        }
+
+        function initTeamCarousel() {
+            teamMembers.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'indicator-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => showMember(i));
+                indicatorsContainer.appendChild(dot);
+            });
+            showMember(0);
+            if (prevBtn) prevBtn.addEventListener('click', () => showMember((currentMember - 1 + teamMembers.length) % teamMembers.length));
+            if (nextBtn) nextBtn.addEventListener('click', () => showMember((currentMember + 1) % teamMembers.length));
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') showMember((currentMember - 1 + teamMembers.length) % teamMembers.length);
+                else if (e.key === 'ArrowRight') showMember((currentMember + 1) % teamMembers.length);
+            });
+        }
+
+        const teamObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) { initTeamCarousel(); teamObserver.disconnect(); } });
+        }, { threshold: 0.2 });
+
+        const teamCarousel = document.getElementById('team-carousel');
+        if (teamCarousel) teamObserver.observe(teamCarousel);
+
+        // ===== SCROLL EXPAND HERO =====
+        (function() {
+            let expandProgress = 0;
+            let heroExpanded = false;
+            let touchStartY = 0;
+            let isMobile = window.innerWidth < 768;
+
+            const heroBg        = document.getElementById('hero-bg-layer');
+            const container     = document.getElementById('hero-expand-container');
+            const overlay       = document.getElementById('hero-expand-overlay');
+            const word1         = document.getElementById('hero-word-1');
+            const word2         = document.getElementById('hero-word-2');
+            const hints         = document.getElementById('hero-expand-hints');
+            const hintLeft      = document.getElementById('hint-left');
+            const hintRight     = document.getElementById('hint-right');
+
+            function applyExpand() {
+                const maxW  = isMobile ? 650  : 1250;
+                const maxH  = isMobile ? 250  : 400;
+                const maxTX = isMobile ? 160  : 150;
+
+                const w  = 300 + expandProgress * maxW;
+                const h  = (isMobile ? 340 : 400) + expandProgress * maxH;
+                const tx = expandProgress * maxTX;
+                const radius = 16 * (1 - expandProgress);
+
+                container.style.width        = w + 'px';
+                container.style.height       = h + 'px';
+                container.style.borderRadius = radius + 'px';
+
+                heroBg.style.opacity  = String(1 - expandProgress);
+                overlay.style.opacity = String(Math.max(0.05, 0.5 - expandProgress * 0.45));
+
+                word1.style.transform = `translateX(-${tx}vw)`;
+                word2.style.transform = `translateX(${tx}vw)`;
+
+                // Position hints just below the video container
+                const halfH = h / 2;
+                hints.style.top       = `calc(50% + ${halfH + 14}px)`;
+                hints.style.transform = 'translateX(-50%)';
+                hints.style.opacity   = String(Math.max(0, 1 - expandProgress * 4));
+
+                if (hintLeft)  hintLeft.style.transform  = `translateX(-${tx}vw)`;
+                if (hintRight) hintRight.style.transform = `translateX(${tx}vw)`;
+            }
+
+            function onWheel(e) {
+                if (heroExpanded && e.deltaY < 0 && window.scrollY <= 5) {
+                    heroExpanded = false;
+                    e.preventDefault();
+                } else if (!heroExpanded) {
+                    e.preventDefault();
+                    expandProgress = Math.min(Math.max(expandProgress + e.deltaY * 0.0009, 0), 1);
+                    if (expandProgress >= 1) heroExpanded = true;
+                    applyExpand();
+                }
+            }
+
+            function onTouchStart(e) {
+                touchStartY = e.touches[0].clientY;
+            }
+
+            function onTouchMove(e) {
+                if (!touchStartY) return;
+                const currentY = e.touches[0].clientY;
+                const delta    = touchStartY - currentY;
+
+                if (heroExpanded && delta < -20 && window.scrollY <= 5) {
+                    heroExpanded = false;
+                    e.preventDefault();
+                } else if (!heroExpanded) {
+                    e.preventDefault();
+                    const factor = delta < 0 ? 0.008 : 0.005;
+                    expandProgress = Math.min(Math.max(expandProgress + delta * factor, 0), 1);
+                    if (expandProgress >= 1) heroExpanded = true;
+                    applyExpand();
+                    touchStartY = currentY;
+                }
+            }
+
+            function onScroll() {
+                if (!heroExpanded) window.scrollTo(0, 0);
+            }
+
+            window.addEventListener('wheel',      onWheel,      { passive: false });
+            window.addEventListener('scroll',     onScroll);
+            window.addEventListener('touchstart', onTouchStart, { passive: false });
+            window.addEventListener('touchmove',  onTouchMove,  { passive: false });
+            window.addEventListener('touchend',   () => { touchStartY = 0; });
+            window.addEventListener('resize',     () => { isMobile = window.innerWidth < 768; applyExpand(); });
+
+            applyExpand();
+        })();
+    </script>
+</body>
+</html>
