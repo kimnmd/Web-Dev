@@ -282,7 +282,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Right: video with parallax */
         .hero-right {
             position: relative;
             z-index: 2;
@@ -299,8 +298,7 @@
 
         .hero-video-wrap {
             position: absolute;
-            inset: -15% 0;
-            will-change: transform;
+            inset: 0;
         }
 
         .hero-video {
@@ -309,6 +307,8 @@
             object-fit: cover;
             display: block;
             pointer-events: none;
+            transform: scale(1.22);
+            transform-origin: center center;
         }
 
         .hero-video-overlay {
@@ -557,8 +557,8 @@
         .footer-bottom p { font-size: 12px; color: var(--text-3); }
 
         /* Scroll reveal */
-        .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
-        .fade-up.visible { opacity: 1; transform: translateY(0); transition: opacity .7s ease; }
+        .fade-up { opacity: 0; transition: opacity .7s ease; }
+        .fade-up.visible { opacity: 1; }
 
         /* Responsive */
         @media (max-width: 900px) {
@@ -598,7 +598,7 @@
         <li><a href="https://online.adp.com/signin/v1/?APPID=Pin4NAS&productId=80e309c3-709e-bae1-e053-3505430b5495&returnURL=https://signin.adp.com&callingAppId=landing&TARGET=-SM-HTTPS%3a%2f%2fsignin%2eadp%2ecom%2femployee%3ftransId%3d8ace1375-1f93-42bf-b644-446908bbb7dc" target="_blank">ADP</a></li>
         <li><a href="NSU%20Benefits%20Portal%20Apr%202026.html">Benefits</a></li>
         <li><a href="https://scribehow.com/viewer/Time_and_Attendance__dt3JdWjhQeKEi7gFQF89_A?referrer=workspace" target="_blank">SOP</a></li>
-        <li><a href="https://find-foodie-now.base44.app" target="_blank">Foodie</a></li>
+        <li><a href="NSU Foodie.html">Foodie</a></li>
         <li><a href="https://erg-jps2.vercel.app/" target="_blank">Community</a></li>
         <li><a href="Nongshim%20USA%20Employee%20Handbook.pdf" target="_blank">Handbook</a></li>
         <li><a href="#contact">Contact</a></li>
@@ -850,7 +850,7 @@
                 <ul>
                     <li><a href="https://online.adp.com/signin/v1/?APPID=Pin4NAS&productId=80e309c3-709e-bae1-e053-3505430b5495&returnURL=https://signin.adp.com&callingAppId=landing&TARGET=-SM-HTTPS%3a%2f%2fsignin%2eadp%2ecom%2femployee%3ftransId%3d8ace1375-1f93-42bf-b644-446908bbb7dc" target="_blank">ADP</a></li>
                     <li><a href="NSU%20Benefits%20Portal%20Apr%202026.html">Benefits</a></li>
-                    <li><a href="https://find-foodie-now.base44.app" target="_blank">Foodie</a></li>
+                    <li><a href="NSU Foodie.html">Foodie</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -1039,75 +1039,6 @@
     const tc = document.getElementById('team-carousel');
     if (tc) teamObs.observe(tc);
 
-    // Hero video parallax on scroll
-    (function() {
-        const wrap = document.getElementById('hero-video-wrap');
-        const hero = document.getElementById('hero');
-        if (!wrap || !hero) return;
-
-        let ticking = false;
-        function onScroll() {
-            if (!ticking) {
-                requestAnimationFrame(() => {
-                    const rect = hero.getBoundingClientRect();
-                    const progress = Math.max(0, -rect.top / rect.height);
-                    // Move video upward as user scrolls down (parallax)
-                    const shift = progress * 18;
-                    wrap.style.transform = `translateY(${shift}%)`;
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        }
-
-        window.addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
-    })();
-
-    // ── PARALLAX ENGINE ──
-    (function () {
-        // [selector, speed]
-        // Centered-parallax formula: shift = (elCenter - vpCenter) * speed
-        // Positive speed → element drifts up as you scroll past it (depth behind)
-        // Negative speed → element drifts down (depth in front)
-        const ITEMS = [
-            { sel: '.hero-left',                        speed:  0.10 },
-            { sel: '.bento-card:nth-child(1)',          speed:  0.07 },
-            { sel: '.bento-card:nth-child(2)',          speed: -0.08 },
-            { sel: '.bento-card:nth-child(3)',          speed:  0.09 },
-            { sel: '.bento-card:nth-child(4)',          speed: -0.07 },
-            { sel: '.bento-card:nth-child(5)',          speed:  0.05 },
-            { sel: '.achievement-card:nth-child(odd)',  speed:  0.07 },
-            { sel: '.achievement-card:nth-child(even)', speed: -0.07 },
-            { sel: '.cta-title',                        speed:  0.09 },
-            { sel: '.cta-desc',                         speed:  0.12 },
-        ];
-
-        const nodes = [];
-        ITEMS.forEach(({ sel, speed }) => {
-            document.querySelectorAll(sel).forEach(el => nodes.push({ el, speed }));
-        });
-
-        let ticking = false;
-        function update() {
-            const vh = window.innerHeight;
-            nodes.forEach(({ el, speed }) => {
-                // Skip fade-up elements that haven't been revealed yet
-                if (el.classList.contains('fade-up') && !el.classList.contains('visible')) return;
-                const rect = el.getBoundingClientRect();
-                const centerFromViewport = rect.top + rect.height / 2 - vh / 2;
-                const shift = centerFromViewport * speed;
-                el.style.transform = `translateY(${shift.toFixed(2)}px)`;
-            });
-            ticking = false;
-        }
-
-        window.addEventListener('scroll', () => {
-            if (!ticking) { requestAnimationFrame(update); ticking = true; }
-        }, { passive: true });
-
-        requestAnimationFrame(update);
-    })();
 </script>
 </body>
 </html>

@@ -664,6 +664,11 @@
     };
   }
 
+  // Cache DOM refs outside tick to avoid per-frame lookups
+  const _title = document.getElementById('hero-title');
+  const _cta   = document.getElementById('hero-cta');
+  const _hint  = document.getElementById('hero-hint');
+
   // ── rAF loop ──
   function tick(){
     // smooth scroll & parallax
@@ -673,9 +678,9 @@
     const morphT = Math.min(Math.max(smoothScroll / 600, 0), 1);
 
     // update title & CTA opacity
-    const title = document.getElementById('hero-title');
-    const cta   = document.getElementById('hero-cta');
-    const hint  = document.getElementById('hero-hint');
+    const title = _title;
+    const cta   = _cta;
+    const hint  = _hint;
 
     if(phase === 'circle'){
       const titleOp = Math.max(0, 1 - morphT * 2.5);
@@ -701,9 +706,9 @@
       c.s = lerp(c.s, tgt.s, SMOOTH);
       c.o = lerp(c.o, tgt.o, SMOOTH);
 
-      // single transform write — GPU composited
+      // single transform write — GPU composited via translate3d
       cards[i].style.transform =
-        `translate(calc(-50% + ${c.x}px), calc(-50% + ${c.y}px)) rotate(${c.r}deg) scale(${c.s})`;
+        `translate3d(calc(-50% + ${c.x}px), calc(-50% + ${c.y}px), 0) rotate(${c.r}deg) scale(${c.s})`;
       cards[i].style.opacity = c.o;
     }
 
@@ -779,19 +784,19 @@ function toggleAcc(hdr){
   if(!open){hdr.classList.add('open');body.classList.add('open');}
 }
 
-/* ══ GLOWING EFFECT mouse tracking (21st.dev GlowingEffect) ══ */
+/* ══ GLOWING EFFECT mouse tracking — optimized: per-card listener, no global scan ══ */
 document.querySelectorAll('.ge-card-outer').forEach(card=>{
   let af=0, angle=0;
-  document.body.addEventListener('pointermove',e=>{
+  card.addEventListener('pointermove',e=>{
     if(af)cancelAnimationFrame(af);
     af=requestAnimationFrame(()=>{
       const r=card.getBoundingClientRect();
-      const cx=r.left+r.width*.5,cy=r.top+r.height*.5;
-      if(Math.hypot(e.clientX-cx,e.clientY-cy)<Math.min(r.width,r.height)*.35)return;
+      const cx=r.left+r.width*.5, cy=r.top+r.height*.5;
       const tgt=(180*Math.atan2(e.clientY-cy,e.clientX-cx))/Math.PI+90;
       const diff=((tgt-angle+180)%360)-180;
-      angle+=diff*.09;
+      angle+=diff*.15;
       card.style.setProperty('--glow-angle',angle+'deg');
+      af=0;
     });
   },{passive:true});
 });
